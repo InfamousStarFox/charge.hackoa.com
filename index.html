@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+	<title>EV Charge Time Calculator</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+	<div class="container">
+		<h1>EV Charge Time Calculator</h1>
+		<!--TODO hide/expand this section-->
+		<h3 id="charge-settings-header">Charge Settings</h3>
+
+		<div class="form-group" id="charge-settings-group">
+			<h3>Charge Curve</h3>
+			<div class="form-row" id="curves"></div>
+			<h3>Charge Limit</h3>
+			<div class="form-row" id="limits"></div>
+			<h3>Battery Size</h3>
+			<div class="form-row">
+				<div class="form-col">
+					<label>Range</label>
+					<input type="number" id="size-range" name="size-range" min="0" step="1" placeholder="miles">
+				</div>
+				<div class="form-col">
+					<label>kWh</label>
+					<input type="number" id="size-kwh" name="size-kwh" min="0" step="1" placeholder="kWh">
+				</div>
+			</div>
+		</div>
+		<hr />
+
+		<h3 id="power-settings-header">Power Settings</h3>
+		<div class="form-group" id="power-settings-group"></div>
+		<hr />
+
+		<h3>Estimated Completion Time: <span id="time">0 hours</span></h3>
+		<h3>Added: <span id="range">0 miles</span></h3>
+	</div>
+
+	<script type="text/javascript">
+		const storedData = JSON.parse(localStorage.getItem('data'));
+
+		const data = {
+			curves: {
+				10: 50,
+				20: 50,
+				30: 50,
+				40: 50,
+				50: 46,
+				60: 32,
+				70: 24,
+				80: 18,
+				90: 12,
+				100: 2
+			},
+			limits: {
+				120: 12,
+				240: null
+			},
+			size: {
+				range: 266,
+				kWh: 66
+			},
+			charge: {
+				battery: {
+					now: 0,
+					target: 100
+				},
+				volts: 120,
+				amps: 12
+			},
+			...storedData
+		};
+
+		function showHideAccordion(header, panel) {
+			document.getElementById(header).addEventListener("click", () => {
+				const group = document.getElementById(panel);
+
+				if (group.style.maxHeight) {
+					group.style.maxHeight = null;
+				} else {
+					group.style.maxHeight = group.scrollHeight + 'px';
+				}
+			});
+		}
+		showHideAccordion('charge-settings-header', 'charge-settings-group');
+		showHideAccordion('power-settings-header', 'power-settings-group');
+
+		function addCurves() {
+			Object.entries(data.curves).forEach(([key, value]) => {
+				const newRow = document.createElement("div");
+				newRow.className = "form-col curve";
+				newRow.innerHTML = `
+				<label>${key}%</label>
+				<input type="number" id="curve-${key}" name="curve-${key}" min="0" step="1" placeholder="kW" value="${value}">
+				`;
+				document.getElementById('curves').appendChild(newRow);
+
+				newRow.addEventListener("keyup", () => {
+					data.curves[key] = document.getElementById(`curve-${key}`).value;
+					localStorage.setItem('data', JSON.stringify(data));
+				});
+			});
+		}
+		addCurves();
+
+		function addLimits() {
+			Object.entries(data.limits).forEach(([key, value]) => {
+				const newRow = document.createElement("div");
+				newRow.className = "form-col limits";
+				newRow.innerHTML = `
+				<label>${key}v</label>
+				<input type="number" id="limit-${key}" name="limit-${key}" min="0" step="1" placeholder="amps" value="${value}">
+				`;
+				document.getElementById('limits').appendChild(newRow);
+
+				newRow.addEventListener("keyup", () => {
+					data.curves[key] = document.getElementById(`limit-${key}`).value;
+					localStorage.setItem('data', JSON.stringify(data));
+				});
+			});
+		}
+		addLimits();
+
+		function addSize() {
+			const range = document.getElementById('size-range');
+			const kwh = document.getElementById('size-kwh');
+
+			range.value = data.size.range;
+			kwh.value = data.size.kWh;
+
+			range.addEventListener("keyup", () => {
+				data.size.range = range.value;
+				localStorage.setItem('data', JSON.stringify(data));
+			});
+
+			kwh.addEventListener("keyup", () => {
+				data.size.kWh = kwh.value;
+				localStorage.setItem('data', JSON.stringify(data));
+			});
+		}
+		addSize();
+
+		function addPower() {
+			const newRow = document.createElement("div");
+			newRow.className = "form-row";
+			newRow.innerHTML = `
+				<div class="form-col">
+					<label>Battery</label>
+					<div class="power">
+						<label>Now</label>
+						<input type="number" id="battery-now" name="battery-now" min="0" max="100" step="1" placeholder="0%" value="${data.charge.battery.now}">
+					</div>
+					<div class="power">
+						<label>Target</label>
+						<input type="number" id="battery-target" name="battery-target" min="0" max="100" step="1" placeholder="0%" value="${data.charge.battery.target}">
+					</div>
+				</div>
+				<div class="form-col">
+					<label>Volts</label>
+					<div class="power">
+						<input type="radio" id="input-120" name="input-voltage" ${data.charge.volts === 120 ? 'checked' : ''}>
+						<label for="input-120">120v</label>
+					</div>
+					<div class="power">
+						<input type="radio" id="input-240" name="input-voltage" ${data.charge.volts === 240 ? 'checked' : ''}>
+						<label for="input-240">240v</label>
+					</div>
+				</div>
+				<div class="form-col amps">
+					<label>Amps</label>
+					<input type="number" id="input-amps" name="input-amps" min="0" step="1" placeholder="amps" value="${data.charge.amps}">
+				</div>
+			`;
+			document.getElementById('power-settings-group').appendChild(newRow);
+
+			newRow.addEventListener("keyup", () => {
+				data.charge.battery.now = document.getElementById("battery-now").value;
+				localStorage.setItem('data', JSON.stringify(data));
+			});
+
+			newRow.addEventListener("keyup", () => {
+				data.charge.battery.target = document.getElementById("battery-target").value;
+				localStorage.setItem('data', JSON.stringify(data));
+			});
+
+			newRow.addEventListener("click", () => {
+				data.charge.volts = document.getElementById("input-120").checked ? 120 : 240;
+				localStorage.setItem('data', JSON.stringify(data));
+				calculate();
+			});
+
+			newRow.addEventListener("keyup", () => {
+				data.charge.amps = document.getElementById("input-amps").value;
+				localStorage.setItem('data', JSON.stringify(data));
+			});
+		}
+		addPower();
+
+		function calculate() {
+			const batter_percent_added = (data.charge.battery.target - data.charge.battery.now) / 100;
+			const battery_kWh_remaining = batter_percent_added * data.size.kWh;
+			const charging_efficiency = 0.95;
+			const charge_kWh_rate = (data.charge.volts * data.charge.amps) / 1000 * charging_efficiency;
+
+			const remainingTime = (battery_kWh_remaining / charge_kWh_rate);
+
+			const hours = remainingTime.toFixed(0);
+			const minutes = ((remainingTime % 1) * 100).toFixed(0);
+
+			const miles = batter_percent_added * data.size.range;
+			document.getElementById('time').innerHTML = `${hours} h ${minutes} min`;
+			document.getElementById('range').innerHTML = `${miles.toFixed(0)} miles`;
+		}
+		calculate();
+
+		document.addEventListener("keyup", () => {
+			calculate();
+		});
+	</script>
+
+</body>
+</html>

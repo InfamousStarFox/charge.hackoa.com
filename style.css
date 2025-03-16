@@ -1,0 +1,192 @@
+body {
+    font-family: sans-serif;
+    background-color: #f3f6fa;
+}
+h1 {
+    border-top: 5px solid black;
+    border-bottom: 5px solid black;
+    padding: 5px;
+}
+h3 {
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+h1,h2,h3,h4 {
+    text-align: center;
+}
+
+.container {
+    max-width: 750px;
+    margin: 0px auto;
+    background-color: white;
+    padding: 10px 40px 30px 40px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
+    border: 1px solid rgba(0, 0, 0, .125);
+}
+
+@media (max-width: 750px) {
+    body {
+        margin: 0px;
+    }
+    .container {
+        padding: 5px 15px 15px 15px;
+    }
+}
+
+.form-group {
+    margin-bottom: 1rem;
+    margin: 0px auto;
+}
+
+.row, .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-items: center;
+    justify-content: center;
+}
+
+.col {
+    flex-basis: 1;
+    flex-grow: 0;
+    max-width: 100%;
+}
+
+.form-col {
+    margin: 5px;
+}
+
+.curve {
+    margin-right: 20px;
+
+    label {
+        width: 40px;
+        display: inline-block;
+    }
+    input {
+        width: 50px;
+        display: inline-block;
+    }
+}
+
+.power {
+    margin-right: 20px;
+
+    label {
+        width: 50px;
+        display: inline-block;
+    }
+    input {
+        width: 50px;
+        display: inline-block;
+    }
+}
+
+.amps input {
+    width: 60px;
+    display: block;
+}
+
+#charge-settings-header, #power-settings-header {
+    cursor: pointer;
+    text-align: left;
+}
+
+#charge-settings-group, #power-settings-group {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.2s ease-out;
+}
+
+hr {
+    border-top: none;
+    border-bottom: 5px solid black;
+}
+
+label {
+    display: inline-block;
+    margin-bottom: .5rem;
+}
+
+input {
+    padding: .375rem .75rem;
+    width: calc(100% - 24px);
+    max-width: 100%;
+}
+
+input[type="radio"] {
+    display: inline;
+    width: auto;
+}
+
+input[type="radio"] + label {
+    margin-bottom: 0px;
+}
+
+input:focus,
+.table .row .col input:focus {
+    border: 1px solid purple;
+    outline: none;
+}
+
+input, button,
+.table .row .col {
+    color: #495057;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    display: block;
+}
+
+button {
+    padding: 5px;
+    width: 100%;
+    margin: 5px;
+}
+
+.table .row .col {
+    margin: 5px;
+    max-width: 100px;
+    width: 100px;
+}
+.table .row .col:nth-child(1) {
+    width: 30px;
+}
+.table .row .col:nth-child(2) {
+    flex-grow: 1;
+    width: 25px;
+}
+
+.table .row .col input {
+    border: 0px;
+}
+
+.table .row:first-child .col {
+    border: 0px;
+    font-weight: bold;
+}
+
+.table .row .col:nth-child(2) {
+    max-width: 100%;
+}
+
+@media (max-width: 475px) {
+    #electricTable .row .col:nth-child(2) {
+        display: none;
+    }
+
+    #electricTable .row .col:not(:first-child) {
+        max-width: 100%;
+        flex-grow: 1;
+        width: 25px;
+    }
+}
+
+@media (max-width: 410px) {
+    #gasTable .row .col:nth-child(2) {
+        display: none;
+    }
+    #gasTable .row .col:not(:first-child) {
+        max-width: 100%;
+        flex-grow: 1;
+        width: 25px;
+    }
+}
