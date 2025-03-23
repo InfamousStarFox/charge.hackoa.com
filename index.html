@@ -253,13 +253,11 @@
 		}
 
 		function drawCurves() {
-			const curves = Object.entries(data.curves);
-
 			const canvas = document.getElementById("canvas-curves");
 			const container = document.getElementById("charge-settings-group");
 			const context = canvas.getContext("2d");
-			canvas.width = limitedMax(container.clientWidth, 800);
-			canvas.height = limitedMax(container.clientHeight, 300);
+			canvas.width = limitedMax(container.clientWidth, 300);
+			canvas.height = limitedMax(container.clientHeight, 100);
 
 			const containerPadding = 20;
 			const gridPadding = 15;
@@ -274,6 +272,7 @@
 			const gridSpacingX = containerWidth / lineCountX;
 			const gridSpacingY = containerHeight / lineCountY;
 
+			const curves = Object.entries(data.curves);
 			const maxSoc = 100;
 			const maxkWh = curves.reduce((a, [, b]) => Math.max(a, b), 0);
 			const gridGroups = [5, 10, 25];
