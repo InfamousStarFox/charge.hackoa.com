@@ -87,14 +87,29 @@ h1,h2,h3,h4 {
 }
 
 #charge-settings-header, #power-settings-header {
-    cursor: pointer;
+    /*cursor: pointer;*/
     text-align: left;
 }
 
+/*
 #charge-settings-group, #power-settings-group {
     overflow: hidden;
     max-height: 0;
     transition: max-height 0.2s ease-out;
+}
+*/
+
+#canvas-curves {
+    display: block;
+    margin: 0px auto;
+    margin-bottom: 10px;
+    background-color: white;
+    border: 3px solid black;
+}
+
+#time p, #range {
+    font-weight: 300;
+    margin: 0px;
 }
 
 hr {

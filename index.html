@@ -15,18 +15,28 @@
 		<h3 id="charge-settings-header">Charge Settings</h3>
 
 		<div class="form-group" id="charge-settings-group">
-			<h3>Charge Curve</h3>
+			<h3>Battery Limit (kWh)</h3>
+			<canvas id="canvas-curves"></canvas>
 			<div class="form-row" id="curves"></div>
-			<h3>Charge Limit</h3>
-			<div class="form-row" id="limits"></div>
+			<h3>Inverter Limit (amps)</h3>
+			<div class="form-row" id="limits">
+				<div class="form-col limits">
+					<label for="limit-120">120v</label>
+					<input type="number" id="limit-120" name="limit-120" min="0" step="1" placeholder="amps">
+				</div>
+				<div class="form-col limits">
+					<label for="limit-240">240v</label>
+					<input type="number" id="limit-240" name="limit-240" min="0" step="1" placeholder="amps">
+				</div>
+			</div>
 			<h3>Battery Size</h3>
 			<div class="form-row">
 				<div class="form-col">
-					<label>Range</label>
+					<label for="size-range">Range</label>
 					<input type="number" id="size-range" name="size-range" min="0" step="1" placeholder="miles">
 				</div>
 				<div class="form-col">
-					<label>kWh</label>
+					<label for="size-kwh">kWh</label>
 					<input type="number" id="size-kwh" name="size-kwh" min="0" step="1" placeholder="kWh">
 				</div>
 			</div>
@@ -34,11 +44,43 @@
 		<hr />
 
 		<h3 id="power-settings-header">Power Settings</h3>
-		<div class="form-group" id="power-settings-group"></div>
+		<div class="form-group" id="power-settings-group">
+			<div class="form-row">
+				<div class="form-col">
+					<label>Battery</label>
+					<div class="power">
+						<label>Now</label>
+						<input type="number" id="battery-now" name="battery-now" min="0" max="100" step="1"
+							placeholder="0%" value="${data.charge.battery.now}">
+					</div>
+					<div class="power">
+						<label>Target</label>
+						<input type="number" id="battery-target" name="battery-target" min="0" max="100" step="1"
+							placeholder="0%" value="${data.charge.battery.target}">
+					</div>
+				</div>
+				<div class="form-col">
+					<label>Volts</label>
+					<div class="power">
+						<input type="radio" id="input-120" name="input-voltage">
+						<label for="input-120">120v</label>
+					</div>
+					<div class="power">
+						<input type="radio" id="input-240" name="input-voltage">
+						<label for="input-240">240v</label>
+					</div>
+				</div>
+				<div class="form-col amps">
+					<label>Amps</label>
+					<input type="number" id="input-amps" name="input-amps" min="0" step="1" placeholder="amps"
+						value="${data.charge.amps}">
+				</div>
+			</div>
+		</div>
 		<hr />
 
 		<h3>Estimated Completion Time: <span id="time">0 hours</span></h3>
-		<h3>Added: <span id="range">0 miles</span></h3>
+		<h3>Adding: <span id="range">0 miles</span></h3>
 	</div>
 
 	<script type="text/javascript">
@@ -59,7 +101,7 @@
 			},
 			limits: {
 				120: 12,
-				240: null
+				240: 32
 			},
 			size: {
 				range: 266,
@@ -71,7 +113,8 @@
 					target: 100
 				},
 				volts: 120,
-				amps: 12
+				amps: 12,
+				efficency: 0.95
 			},
 			...storedData
 		};
@@ -101,27 +144,27 @@
 				document.getElementById('curves').appendChild(newRow);
 
 				newRow.addEventListener("keyup", () => {
-					data.curves[key] = document.getElementById(`curve-${key}`).value;
+					data.curves[key] = Number(document.getElementById(`curve-${key}`).value);
 					localStorage.setItem('data', JSON.stringify(data));
+					drawCurves();
 				});
 			});
 		}
 		addCurves();
 
 		function addLimits() {
-			Object.entries(data.limits).forEach(([key, value]) => {
-				const newRow = document.createElement("div");
-				newRow.className = "form-col limits";
-				newRow.innerHTML = `
-				<label>${key}v</label>
-				<input type="number" id="limit-${key}" name="limit-${key}" min="0" step="1" placeholder="amps" value="${value}">
-				`;
-				document.getElementById('limits').appendChild(newRow);
+			const limit120 = document.getElementById("limit-120");
+			limit120.value = data.limits[120];
+			limit120.addEventListener("keyup", () => {
+				data.limits[120] = Number(limit120.value);
+				localStorage.setItem('data', JSON.stringify(data));
+			});
 
-				newRow.addEventListener("keyup", () => {
-					data.curves[key] = document.getElementById(`limit-${key}`).value;
-					localStorage.setItem('data', JSON.stringify(data));
-				});
+			const limit240 = document.getElementById("limit-240");
+			limit240.value = data.limits[240];
+			limit240.addEventListener("keyup", () => {
+				data.limits[240] = Number(limit240.value);
+				localStorage.setItem('data', JSON.stringify(data));
 			});
 		}
 		addLimits();
@@ -134,87 +177,231 @@
 			kwh.value = data.size.kWh;
 
 			range.addEventListener("keyup", () => {
-				data.size.range = range.value;
+				data.size.range = Number(range.value);
 				localStorage.setItem('data', JSON.stringify(data));
 			});
 
 			kwh.addEventListener("keyup", () => {
-				data.size.kWh = kwh.value;
+				data.size.kWh = Number(kwh.value);
 				localStorage.setItem('data', JSON.stringify(data));
 			});
 		}
 		addSize();
 
 		function addPower() {
-			const newRow = document.createElement("div");
-			newRow.className = "form-row";
-			newRow.innerHTML = `
-				<div class="form-col">
-					<label>Battery</label>
-					<div class="power">
-						<label>Now</label>
-						<input type="number" id="battery-now" name="battery-now" min="0" max="100" step="1" placeholder="0%" value="${data.charge.battery.now}">
-					</div>
-					<div class="power">
-						<label>Target</label>
-						<input type="number" id="battery-target" name="battery-target" min="0" max="100" step="1" placeholder="0%" value="${data.charge.battery.target}">
-					</div>
-				</div>
-				<div class="form-col">
-					<label>Volts</label>
-					<div class="power">
-						<input type="radio" id="input-120" name="input-voltage" ${data.charge.volts === 120 ? 'checked' : ''}>
-						<label for="input-120">120v</label>
-					</div>
-					<div class="power">
-						<input type="radio" id="input-240" name="input-voltage" ${data.charge.volts === 240 ? 'checked' : ''}>
-						<label for="input-240">240v</label>
-					</div>
-				</div>
-				<div class="form-col amps">
-					<label>Amps</label>
-					<input type="number" id="input-amps" name="input-amps" min="0" step="1" placeholder="amps" value="${data.charge.amps}">
-				</div>
-			`;
-			document.getElementById('power-settings-group').appendChild(newRow);
 
-			newRow.addEventListener("keyup", () => {
-				data.charge.battery.now = document.getElementById("battery-now").value;
+			const batteryNow = document.getElementById("battery-now");
+			batteryNow.value = data.charge.battery.now;
+
+			const batteryTarget = document.getElementById("battery-target");
+			batteryTarget.value = data.charge.battery.target;
+
+			const input120 = document.getElementById("input-120");
+			input120.checked = data.charge.volts === 120;
+
+			const input240 = document.getElementById("input-240");
+			input240.checked = data.charge.volts === 240;
+
+			const inputAmps = document.getElementById("input-amps");
+			inputAmps.value = data.charge.amps;
+
+			batteryNow.addEventListener("keyup", () => {
+				data.charge.battery.now = Number(batteryNow.value);
 				localStorage.setItem('data', JSON.stringify(data));
 			});
 
-			newRow.addEventListener("keyup", () => {
-				data.charge.battery.target = document.getElementById("battery-target").value;
+			batteryTarget.addEventListener("keyup", () => {
+				data.charge.battery.target = Number(batteryTarget.value);
 				localStorage.setItem('data', JSON.stringify(data));
 			});
 
-			newRow.addEventListener("click", () => {
-				data.charge.volts = document.getElementById("input-120").checked ? 120 : 240;
+			input120.addEventListener("click", () => {
+				data.charge.volts = input120.checked ? 120 : 240;
 				localStorage.setItem('data', JSON.stringify(data));
 				calculate();
 			});
 
-			newRow.addEventListener("keyup", () => {
-				data.charge.amps = document.getElementById("input-amps").value;
+			input240.addEventListener("click", () => {
+				data.charge.volts = input240.checked ? 240 : 120;
+				localStorage.setItem('data', JSON.stringify(data));
+				calculate();
+			});
+
+			inputAmps.addEventListener("keyup", () => {
+				data.charge.amps = Number(inputAmps.value);
 				localStorage.setItem('data', JSON.stringify(data));
 			});
 		}
 		addPower();
 
+		const limitedMax = (number, limit) => number > limit ? limit : number;
+
+		const invertCanvas = (canvas, context, padding) => {
+			context.stroke();
+			context.beginPath();
+
+			context.setTransform(1, 0, 0, -1, 0, canvas.height);
+			context.translate(padding, padding);
+		}
+
+		const resetCanvas = (context, padding) => {
+			context.stroke();
+			context.beginPath();
+
+			context.setTransform(1, 0, 0, 1, 0, 0);
+			context.translate(padding, padding);
+		}
+
+		function drawCurves() {
+			const curves = Object.entries(data.curves);
+
+			const canvas = document.getElementById("canvas-curves");
+			const container = document.getElementById("charge-settings-group");
+			const context = canvas.getContext("2d");
+			canvas.width = limitedMax(container.clientWidth, 800);
+			canvas.height = limitedMax(container.clientHeight, 300);
+
+			const containerPadding = 20;
+			const gridPadding = 15;
+			const fontSize = 10;
+
+			const containerWidth = canvas.width - (containerPadding * 2);
+			const containerHeight = canvas.height - (containerPadding * 2);
+
+			const lineCountX = limitedMax(containerWidth / gridPadding, 10);
+			const lineCountY = limitedMax(containerHeight / gridPadding, 10);
+
+			const gridSpacingX = containerWidth / lineCountX;
+			const gridSpacingY = containerHeight / lineCountY;
+
+			const maxSoc = 100;
+			const maxkWh = curves.reduce((a, [, b]) => Math.max(a, b), 0);
+			const gridGroups = [5, 10, 25];
+
+			function getLabelGroup(groups, max, count) {
+				return groups.find((item) => (item * count) >= max)
+					?? getLabelGroup(groups.map((item) => item * 10), max, count);
+			}
+
+			const labelGroupX = getLabelGroup(gridGroups, maxSoc, lineCountX);
+			const labelGroupY = getLabelGroup(gridGroups, maxkWh, lineCountY);
+
+			context.lineWidth = 0.5;
+			context.strokeStyle = "gray";
+			invertCanvas(canvas, context, containerPadding);
+
+			// Draw Horizontal Grid Lines
+			for (let i = 0; i <= lineCountY; i++) {
+				const startY = i * gridSpacingY;
+				context.moveTo(0, startY);
+				context.lineTo(containerWidth, startY);
+			};
+
+			// Draw Vertical Grid Lines
+			for (let i = 0; i <= lineCountX; i++) {
+				const startX = i * gridSpacingX;
+				context.moveTo(startX, 0);
+				context.lineTo(startX, containerHeight);
+			};
+
+			resetCanvas(context, containerPadding);
+
+			// Label X-Axis (SoC)
+			for (let i = 0; i <= lineCountX; i++) {
+				const label = i * labelGroupX;
+				context.fillText(label, (i * gridSpacingX) - (fontSize / 2), containerHeight + fontSize);
+			};
+
+			// Label Y-Axis (kWh)
+			for (let i = 0; i <= lineCountY; i++) {
+				const label = i * labelGroupY;
+				context.fillText(label, -1.5 * fontSize, containerHeight - (i * gridSpacingY) + (fontSize / 4));
+			};
+
+			invertCanvas(canvas, context, containerPadding);
+
+			context.lineWidth = 3;
+			context.strokeStyle = "black";
+
+			curves.forEach(([key, value], index) => {
+				const x = (Number(key) * containerWidth / (labelGroupX * lineCountX));
+				const y = (Number(value) * containerHeight / (labelGroupY * lineCountY));
+
+				if (index === 0) {
+					context.moveTo(0, y);
+				}
+				context.lineTo(x, y);
+			});
+			context.stroke();
+
+		}
+		drawCurves();
+
 		function calculate() {
-			const batter_percent_added = (data.charge.battery.target - data.charge.battery.now) / 100;
-			const battery_kWh_remaining = batter_percent_added * data.size.kWh;
-			const charging_efficiency = 0.95;
-			const charge_kWh_rate = (data.charge.volts * data.charge.amps) / 1000 * charging_efficiency;
+			const getChargeCurveLimit = (soc) => {
+				if (soc <= 10) {
+					return data.curves[10];
+				}
 
-			const remainingTime = (battery_kWh_remaining / charge_kWh_rate);
+				const leftIndex = Math.floor(soc / 10) * 10;
+				const rightIndex = leftIndex + 10;
 
-			const hours = remainingTime.toFixed(0);
-			const minutes = ((remainingTime % 1) * 100).toFixed(0);
+				const leftLimit = data.curves[leftIndex];
+				const rightimit = data.curves[rightIndex];
 
-			const miles = batter_percent_added * data.size.range;
-			document.getElementById('time').innerHTML = `${hours} h ${minutes} min`;
-			document.getElementById('range').innerHTML = `${miles.toFixed(0)} miles`;
+				const leftPercent = (rightIndex - soc) / 10;
+				const rightPercent = (soc - leftIndex) / 10;
+
+				return (leftLimit * leftPercent) + (rightimit * rightPercent);
+			}
+
+			const chargeLimits = [];
+			for (let i = 0; i < 100; i++) {
+				const limitBattery = getChargeCurveLimit(i) * 1000 / 240;
+				const limitInverter = data.limits[data.charge.volts] ?? Number.POSITIVE_INFINITY;
+				const limitCircuit = data.charge.amps ?? 0;
+				chargeLimits[i] = Math.min(limitBattery, limitInverter, limitCircuit);
+			}
+
+			const battery_percent_added = (data.charge.battery.target - data.charge.battery.now) / 100;
+
+			const getTime = () => {
+				const average_charge_amps = chargeLimits
+					.slice(data.charge.battery.now, data.charge.battery.target)
+					.reduce((a, b) => a + b) / (data.charge.battery.target - data.charge.battery.now);
+
+				const battery_Wh_remaining = data.size.kWh * battery_percent_added * 1000;
+				const charge_Wh_rate = (data.charge.volts * average_charge_amps) * data.charge.efficency;
+
+				if (!charge_Wh_rate) {
+					return '0 hours';
+				}
+				const remainingHours = (battery_Wh_remaining / charge_Wh_rate);
+
+				const now = new Date();
+				now.setSeconds(now.getSeconds() + (remainingHours * 60 * 60));
+				const completeDate = now.toLocaleTimeString('en-us', {
+						weekday: 'long',
+						hour: '2-digit',
+						minute: '2-digit',
+						hour12: true
+					});
+
+				const hours = remainingHours.toFixed(0);
+				const minutes = ((remainingHours % 1) * 60).toFixed(0);
+
+				return `
+					<p>${completeDate}</p>
+					<p>${hours} hours, ${minutes} minutes from now</p>
+				`;
+			};
+
+			const added_miles = battery_percent_added * data.size.range;
+
+			if (chargeLimits.length && battery_percent_added) {
+				document.getElementById('time').innerHTML = getTime();
+				document.getElementById('range').innerHTML = `${added_miles.toFixed(0)} miles`;
+			}
 		}
 		calculate();
 
@@ -224,4 +411,5 @@
 	</script>
 
 </body>
+
 </html>
